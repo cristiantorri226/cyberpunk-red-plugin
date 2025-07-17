@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cyberpunk Red - Fichas de Personaje</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: 'Roboto', Arial, sans-serif; background: #fff; color: #222; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 18px; }
+    h2, h3 { color: #c00; margin-bottom: 0.4em; }
+    .section { border: 2px solid #c00; padding: 10px; margin-bottom: 16px; background: #fff; }
+    label { font-weight: bold; }
+    input, textarea, select { margin: 2px 0 8px 0; width: 100%; box-sizing: border-box; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+    th, td { border: 1px solid #c00; padding: 4px; font-size: 12px; }
+    th { background-color: #cfd8dc; }
+    button, select { font-size: 1em; margin-right:8px; }
+    .actions { margin-bottom: 16px; }
+    .dice-result { font-weight:bold; color:#c00; }
+    .half { width: 48%; display:inline-block; vertical-align:top; }
+    .objmod-table input, .objmod-table select { width: auto; }
+    .objmod-table th, .objmod-table td { font-size: 13px; }
+    .objmod-table td input[type="number"] { width: 50px; }
+    .objmod-table td select { width: 80px; }
+    .objmod-table td input[type="text"] { width: 140px; }
+    .objmod-table td input[type="checkbox"] { width: 18px; }
+    .objmod-table td span { font-size: 12px; }
+    .objmod-add-row { background: #f0f0f0; }
+    .objmod-global { color: #088; font-size:13px; }
+    .objmod-ficha { color: #c00; font-size:13px; }
+    #dice-stat { width: 80px; }
+    @media (max-width:900px){
+      .half { width: 100%; display:block;}
+    }
+    /* Icono flotante */
+    #menu-fichas-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 9999;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #c00;
+      color: #fff;
+      font-size: 2.2em;
+      box-shadow: 0 2px 8px #0004;
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: box-shadow 0.2s;
+    }
+    #menu-fichas-btn:hover {
+      box-shadow: 0 4px 16px #0007;
+      background: #a00;
+    }
+    /* Menú emergente */
+    #menu-fichas-panel {
+      position: fixed;
+      bottom: 95px;
+      right: 28px;
+      z-index: 9998;
+      width: 420px;
+      max-height: 80vh;
+      overflow-y: auto;
+      background: #fff;
+      border: 2px solid #c00;
+      border-radius: 10px;
+      box-shadow: 0 4px 24px #0008;
+      padding: 16px 18px 12px 18px;
+      display: none;
+    }
+    #menu-fichas-panel.visible {
+      display: block;
+      animation: fadeInMenu 0.25s;
+    }
+    @keyframes fadeInMenu {
+      from { opacity:0; transform:scale(0.95);}
+      to { opacity:1; transform:scale(1);}
+    }
+    @media (max-width:500px){
+      #menu-fichas-panel {width:98vw; right:1vw; left:1vw;}
+    }
+  </style>
+</head>
+<body>
+<!-- Icono flotante menú fichas -->
+<button id="menu-fichas-btn" title="Abrir menú de fichas">
+  🧑‍💼
+</button>
+<!-- Menú emergente de fichas/modificadores -->
+<div id="menu-fichas-panel">
+  <h2>Fichas de Personaje</h2>
+  <div class="actions">
+    <label for="ficha-list">Fichas guardadas:</label>
+    <select id="ficha-list"></select>
+    <button onclick="nuevaFicha()">Nueva ficha</button>
+    <button onclick="guardarFichaActual()">Guardar ficha</button>
+    <button onclick="cargarFichaActual()">Cargar ficha</button>
+    <button onclick="borrarFicha()">Eliminar ficha</button>
+    <span id="save-status"></span>
+  </div>
+
+  <div class="actions">
+    <label>Tirada de estadística: </label>
+    <select id="dice-stat">
+      <option value="stat_int">INT</option>
+      <option value="stat_ref">REF</option>
+      <option value="stat_des">DES</option>
+      <option value="stat_tec">TEC</option>
+      <option value="stat_fri">FRI</option>
+      <option value="stat_vol">VOL</option>
+      <option value="stat_sue">SUE</option>
+      <option value="stat_mov">MOV</option>
+      <option value="stat_tco">TCO</option>
+      <option value="stat_emp">EMP</option>
+    </select>
+    <label>Dado:</label>
+    <select id="dice-type">
+      <option value="d6">d6</option>
+      <option value="d10">d10</option>
+      <option value="d20">d20</option>
+      <option value="d100">d100</option>
+    </select>
+    <button onclick="rollStatDice()">Tirar</button>
+    <span id="dice-result" class="dice-result"></span>
+  </div>
+
+  <!-- MODIFICADORES DE OBJETO/EQUIPO -->
+  <div class="section">
+    <h3>Modificadores de Objetos/Equipo</h3>
+    <table class="objmod-table" id="objmod-table">
+      <thead>
+        <tr>
+          <th>Equipado</th>
+          <th>Nombre del objeto</th>
+          <th>Modificador</th>
+          <th>Estadística</th>
+          <th>Alcance</th>
+          <th>Borrar</th>
+        </tr>
+      </thead>
+      <tbody id="objmod-tbody"></tbody>
+      <tfoot>
+        <tr class="objmod-add-row">
+          <td></td>
+          <td><input type="text" id="objmod-nombre" placeholder="Ej: Gafas INT"></td>
+          <td><input type="number" id="objmod-mod" value="1"></td>
+          <td>
+            <select id="objmod-estad">
+              <option value="stat_int">INT</option>
+              <option value="stat_ref">REF</option>
+              <option value="stat_des">DES</option>
+              <option value="stat_tec">TEC</option>
+              <option value="stat_fri">FRI</option>
+              <option value="stat_vol">VOL</option>
+              <option value="stat_sue">SUE</option>
+              <option value="stat_mov">MOV</option>
+              <option value="stat_tco">TCO</option>
+              <option value="stat_emp">EMP</option>
+            </select>
+          </td>
+          <td>
+            <select id="objmod-global">
+              <option value="ficha">Ficha actual</option>
+              <option value="global">Global</option>
+            </select>
+          </td>
+          <td><button onclick="addObjMod()">Añadir</button></td>
+        </tr>
+      </tfoot>
+    </table>
+    <div><span class="objmod-global">Global: afecta todas las fichas</span> | <span class="objmod-ficha">Ficha: solo ficha seleccionada</span></div>
+  </div>
+
+  <!-- DATOS PRINCIPALES -->
+  <div class="section">
+    <div class="half">
+      <label>Mote:</label>
+      <input type="text" name="mote">
+      <label>Rol:</label>
+      <input type="text" name="rol">
+      <label>Aptitud de rol:</label>
+      <input type="text" name="aptitud">
+      <label>Rango:</label>
+      <input type="text" name="rango">
+      <label>Notas:</label>
+      <textarea name="notas"></textarea>
+      <label>Humanidad:</label>
+      <input type="number" name="humanidad" min="0">
+    </div>
+    <div class="half">
+      <label>Inteligencia (INT):</label>
+      <input type="number" name="stat_int" min="0">
+      <label>Reflejos (REF):</label>
+      <input type="number" name="stat_ref" min="0">
+      <label>Destreza (DES):</label>
+      <input type="number" name="stat_des" min="0">
+      <label>Tecnología (TEC):</label>
+      <input type="number" name="stat_tec" min="0">
+      <label>Frialdad (FRI):</label>
+      <input type="number" name="stat_fri" min="0">
+      <label>Voluntad (VOL):</label>
+      <input type="number" name="stat_vol" min="0">
+      <label>Suerte (SUE):</label>
+      <input type="number" name="stat_sue" min="0">
+      <label>Movimiento (MOV):</label>
+      <input type="number" name="stat_mov" min="0">
+      <label>Constitución (TCO):</label>
+      <input type="number" name="stat_tco" min="0">
+      <label>Empatía (EMP):</label>
+      <input type="number" name="stat_emp" min="0">
+    </div>
+  </div>
+  <!-- Puedes seguir agregando más secciones aquí como en tu versión anterior -->
+</div>
+
+<script>
+const FICHAS_KEY = "cyberpunk_red_fichas";
+const OBJMOD_GLOBAL_KEY = "cyberpunk_red_objmods_global";
+
+// Utilidades básicas (inputs)
+function getAllInputs(){
+  return document.querySelectorAll('input[name], textarea[name], select[name]');
+}
+function getFichaData() {
+  const inputs = getAllInputs();
+  const data = {};
+  inputs.forEach(inp => {
+    if (!inp.name) return;
+    if (inp.type === "checkbox") {
+      data[inp.name] = inp.checked;
+    } else {
+      data[inp.name] = inp.value;
+    }
+  });
+  return data;
+}
+function setFichaData(data) {
+  const inputs = getAllInputs();
+  inputs.forEach(inp => {
+    if (inp.name && data[inp.name] !== undefined) {
+      if (inp.type === "checkbox") {
+        inp.checked = data[inp.name];
+      } else {
+        inp.value = data[inp.name];
+      }
+    } else if (inp.name) {
+      if (inp.type === "checkbox") inp.checked = false;
+      else inp.value = "";
+    }
+  });
+}
+function limpiarFicha() {
+  setFichaData({});
+}
+
+// Fichas CRUD
+function cargarListaFichas() {
+  const fichas = JSON.parse(localStorage.getItem(FICHAS_KEY) || "{}");
+  const fichaList = document.getElementById("ficha-list");
+  fichaList.innerHTML = "";
+  Object.keys(fichas).forEach(nombre => {
+    const opt = document.createElement("option");
+    opt.value = nombre;
+    opt.textContent = nombre;
+    fichaList.appendChild(opt);
+  });
+  if (Object.keys(fichas).length > 0) {
+    fichaList.value = Object.keys(fichas)[0];
+    cargarFichaActual();
+  }
+  cargarObjMods(); // refresca modificadores al cambiar ficha
+}
+function nuevaFicha() {
+  const nombre = prompt("Nombre para la nueva ficha:");
+  if (!nombre) return;
+  const fichas = JSON.parse(localStorage.getItem(FICHAS_KEY) || "{}");
+  if (fichas[nombre]) {
+    alert("Ya existe una ficha con ese nombre.");
+    return;
+  }
+  fichas[nombre] = {};
+  localStorage.setItem(FICHAS_KEY, JSON.stringify(fichas));
+  cargarListaFichas();
+  document.getElementById("ficha-list").value = nombre;
+  limpiarFicha();
+  cargarObjMods();
+}
+function guardarFichaActual() {
+  const nombre = document.getElementById("ficha-list").value;
+  if (!nombre) {
+    showSaveStatus("No hay ficha seleccionada.", false);
+    return;
+  }
+  const fichas = JSON.parse(localStorage.getItem(FICHAS_KEY) || "{}");
+  fichas[nombre] = getFichaData();
+  localStorage.setItem(FICHAS_KEY, JSON.stringify(fichas));
+  guardarObjModsFicha(nombre);
+  showSaveStatus("Ficha guardada 👍", true);
+}
+function cargarFichaActual() {
+  const nombre = document.getElementById("ficha-list").value;
+  const fichas = JSON.parse(localStorage.getItem(FICHAS_KEY) || "{}");
+  if (fichas[nombre]) setFichaData(fichas[nombre]);
+  else limpiarFicha();
+  cargarObjMods();
+}
+function borrarFicha() {
+  const nombre = document.getElementById("ficha-list").value;
+  if (!nombre) return;
+  if (!confirm("¿Seguro que quieres borrar la ficha '" + nombre + "'?")) return;
+  const fichas = JSON.parse(localStorage.getItem(FICHAS_KEY) || "{}");
+  delete fichas[nombre];
+  localStorage.setItem(FICHAS_KEY, JSON.stringify(fichas));
+  borrarObjModsFicha(nombre);
+  cargarListaFichas();
+  limpiarFicha();
+  cargarObjMods();
+}
+function showSaveStatus(msg, ok){
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.style.color = ok ? '#080' : '#c00';
+  setTimeout(()=>{el.textContent=''},3000);
+}
+
+// ------------------- OBJETOS/MODIFICADORES ---------------------
+
+// Obtención y guardado
+function getObjModsGlobal() {
+  return JSON.parse(localStorage.getItem(OBJMOD_GLOBAL_KEY) || "[]");
+}
+function setObjModsGlobal(arr) {
+  localStorage.setItem(OBJMOD_GLOBAL_KEY, JSON.stringify(arr));
+}
+function getObjModsFicha(nombre) {
+  return JSON.parse(localStorage.getItem(OBJMOD_GLOBAL_KEY + "_ficha_" + nombre) || "[]");
+}
+function setObjModsFicha(nombre, arr) {
+  localStorage.setItem(OBJMOD_GLOBAL_KEY + "_ficha_" + nombre, JSON.stringify(arr));
+}
+function guardarObjModsFicha(nombre) {
+  // Guarda los modificadores de ficha actual
+  const arr = objMods.filter(obj => obj.alcance === "ficha");
+  setObjModsFicha(nombre, arr);
+}
+function borrarObjModsFicha(nombre) {
+  localStorage.removeItem(OBJMOD_GLOBAL_KEY + "_ficha_" + nombre);
+}
+
+// Estructura de modificador:
+// {equipado:bool, nombre:string, mod:number, estad:string, alcance:"global"|"ficha"}
+
+let objMods = []; // modificadores activos para UI
+
+// Añadir objeto/modificador
+function addObjMod() {
+  const nombre = document.getElementById("objmod-nombre").value.trim();
+  if (!nombre) return;
+  const mod = parseInt(document.getElementById("objmod-mod").value) || 0;
+  const estad = document.getElementById("objmod-estad").value;
+  const alcance = document.getElementById("objmod-global").value;
+  const nuevo = {equipado:true, nombre, mod, estad, alcance};
+  objMods.push(nuevo);
+  syncObjModsStorage();
+  renderObjMods();
+  document.getElementById("objmod-nombre").value = "";
+  document.getElementById("objmod-mod").value = "1";
+}
+
+// Sincronizar con localStorage
+function syncObjModsStorage() {
+  // Guarda globales y ficha por separado
+  const globalMods = objMods.filter(obj => obj.alcance === "global");
+  setObjModsGlobal(globalMods);
+
+  const nombre = document.getElementById("ficha-list").value;
+  if (!nombre) return;
+  const fichaMods = objMods.filter(obj => obj.alcance === "ficha");
+  setObjModsFicha(nombre, fichaMods);
+}
+
+// Cargar para la ficha actual
+function cargarObjMods() {
+  // Combina global + ficha
+  const globalMods = getObjModsGlobal();
+  const nombre = document.getElementById("ficha-list").value;
+  const fichaMods = nombre ? getObjModsFicha(nombre) : [];
+  objMods = [...globalMods, ...fichaMods];
+  renderObjMods();
+}
+
+// Render tabla
+function renderObjMods() {
+  const tbody = document.getElementById("objmod-tbody");
+  tbody.innerHTML = "";
+  objMods.forEach((obj, idx) => {
+    const tr = document.createElement("tr");
+    // Equipado
+    const tdEq = document.createElement("td");
+    const eqChk = document.createElement("input");
+    eqChk.type = "checkbox";
+    eqChk.checked = obj.equipado;
+    eqChk.onchange = ()=>{obj.equipado=eqChk.checked;syncObjModsStorage();};
+    tdEq.appendChild(eqChk);
+    tr.appendChild(tdEq);
+    // Nombre
+    const tdNombre = document.createElement("td");
+    tdNombre.textContent = obj.nombre;
+    tr.appendChild(tdNombre);
+    // Modificador
+    const tdMod = document.createElement("td");
+    tdMod.textContent = (obj.mod > 0 ? "+" : "") + obj.mod;
+    tr.appendChild(tdMod);
+    // Estadística
+    const tdEstad = document.createElement("td");
+    tdEstad.textContent = obj.estad.replace("stat_","");
+    tr.appendChild(tdEstad);
+    // Alcance
+    const tdAlc = document.createElement("td");
+    tdAlc.innerHTML = obj.alcance === "global" ?
+      '<span class="objmod-global">Global</span>' :
+      '<span class="objmod-ficha">Ficha</span>';
+    tr.appendChild(tdAlc);
+    // Borrar
+    const tdDel = document.createElement("td");
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "❌";
+    delBtn.onclick = ()=>{objMods.splice(idx,1);syncObjModsStorage();renderObjMods();};
+    tdDel.appendChild(delBtn);
+    tr.appendChild(tdDel);
+    tbody.appendChild(tr);
+  });
+}
+
+// Calcula el modificador total equipado para una estadística
+function getModTotal(statKey) {
+  return objMods.reduce((acc, obj) => {
+    if(obj.equipado && obj.estad === statKey) return acc + obj.mod;
+    return acc;
+  }, 0);
+}
+
+// ---------- DADOS -----------
+// Tirada de estadística principal con modificadores aplicados
+function rollStatDice() {
+  const stat = document.getElementById('dice-stat').value;
+  const dice = document.getElementById('dice-type').value;
+  const resultEl = document.getElementById('dice-result');
+  // Valor base de la ficha
+  const statVal = parseInt(document.querySelector('input[name="'+stat+'"]').value) || 0;
+  const modVal = getModTotal(stat);
+  let diceVal = 0;
+  let diceTxt = "";
+  if (dice === 'd6') { diceVal = rand(1,6); diceTxt = "d6="+diceVal; }
+  else if (dice === 'd10') { diceVal = rand(1,10); diceTxt = "d10="+diceVal; }
+  else if (dice === 'd20') { diceVal = rand(1,20); diceTxt = "d20="+diceVal; }
+  else if (dice === 'd100') { diceVal = rand(1,100); diceTxt = "d100="+diceVal; }
+  const total = statVal + diceVal + modVal;
+  let modTxt = modVal !== 0 ? (modVal>0?"+":"") + modVal + " (mod)" : "";
+  resultEl.textContent = `Tirada ${stat.replace("stat_","")}: ${statVal} (stat) + ${diceTxt} ${modTxt ? "+ "+modTxt : ""} = ${total}`;
+  setTimeout(()=>{resultEl.textContent=''},5000);
+}
+function rand(min, max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+// ------------------ INICIO ----------------------
+// Icono flotante: abrir/cerrar menú
+window.addEventListener("DOMContentLoaded", ()=>{
+  cargarListaFichas();
+  cargarObjMods();
+  // Panel flotante
+  const btn = document.getElementById("menu-fichas-btn");
+  const panel = document.getElementById("menu-fichas-panel");
+  btn.addEventListener("click", ()=>{
+    panel.classList.toggle("visible");
+  });
+  // Cerrar con ESC
+  window.addEventListener("keydown", (e)=>{
+    if(panel.classList.contains("visible") && e.key==="Escape") panel.classList.remove("visible");
+  });
+});
+document.getElementById("ficha-list").addEventListener("change", ()=>{
+  cargarFichaActual();
+  cargarObjMods();
+});
+
+</script>
+</body>
+</html>
