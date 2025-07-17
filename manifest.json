@@ -2,5 +2,5 @@
   "manifest_version": 1,
   "name": "Cyberpunk Red Character Sheets",
   "version": "1.0.0",
-  "description": "Character sheet with Cyberpunk Red attributes, editable fields, dice roller, and import/export for Owlbear Rodeo.",
+  "description": "Character sheet with Cyberpunk Red attributes and automated dice rolls"
 }
