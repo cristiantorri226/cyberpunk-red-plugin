@@ -3,5 +3,4 @@
   "name": "Cyberpunk Red Character Sheets",
   "version": "1.0.0",
   "description": "Character sheet with Cyberpunk Red attributes, editable fields, dice roller, and import/export for Owlbear Rodeo.",
-  "type": "window"
 }
