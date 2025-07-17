@@ -2,5 +2,7 @@
   "manifest_version": 1,
   "name": "Cyberpunk Red Character Sheets",
   "version": "1.0.0",
-  "description": "Character sheet with Cyberpunk Red attributes and automated dice rolls"
+  "description": "Character sheet with Cyberpunk Red attributes and automated dice rolls",
+  "author": "cristiantorri226",
+  "sheet": "https://ruta-a-tu-archivo/cyberpunk-red-sheet.html"
 }
