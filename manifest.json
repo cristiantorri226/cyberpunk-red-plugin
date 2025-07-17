@@ -4,5 +4,5 @@
   "version": "1.0.0",
   "description": "Character sheet with Cyberpunk Red attributes and automated dice rolls",
   "author": "cristiantorri226",
-  "sheet": "https://ruta-a-tu-archivo/cyberpunk-red-sheet.html"
+  "sheet": "https://raw.githubusercontent.com/cristiantorri226/cyberpunk-red-plugin/refs/heads/main/cyberpunk-red-sheet.html"
 }
